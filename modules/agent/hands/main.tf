@@ -7,6 +7,10 @@ locals {
   # which a pod has no route to; `bin/mail`'s own default is that public name.
   brain_root = trimsuffix(var.brain_url, "/mcp")
   mail_me    = var.mail_me == "" ? trimsuffix(var.name, "-hand") : var.mail_me
+
+  # ★ THE PEN, BY FILE. ONE path, used by the secret mount, the mount_path and FORGEJO_TOKEN_FILE, so
+  # moving it is a single edit instead of three that can drift apart.
+  forgejo_token_path = "/home/node/.cline/hands/secrets/forgejo-token"
 }
 
 data "kubernetes_service_v1" "repo_gateway" {
@@ -222,21 +226,36 @@ resource "kubernetes_deployment_v1" "hand" {
             }
           }
 
-          # ★ MY OWN GIT CREDENTIAL, AND ONLY MINE. A token, not a key on someone's laptop: the push
-          # then authenticates as this self, so the audit trail and the commit agree. Absent by default
-          # (a room with no forgejo must not fail to start over a missing key).
+          # ★ MY OWN GIT CREDENTIAL, AND ONLY MINE — NOW A FILE, NOT AN ENV. A token in the environment
+          # is inherited by every child, including a finger's shell, so anything the agent runs can read
+          # it; a mounted file is only readable by something that knows the path. `git-askpass` prints it
+          # for the prompt git passes it, and `GIT_TERMINAL_PROMPT=0` makes a missing credential FAIL
+          # instead of hanging a finger on a hidden prompt. Absent by default (a room with no forgejo
+          # must not fail to start over a missing key).
           dynamic "env" {
-            for_each = var.forgejo_token_field == "" ? [] : [var.forgejo_token_field]
+            for_each = var.forgejo_token_field == "" ? [] : [1]
 
             content {
-              name = "FORGEJO_TOKEN"
+              name  = "FORGEJO_TOKEN_FILE"
+              value = local.forgejo_token_path
+            }
+          }
 
-              value_from {
-                secret_key_ref {
-                  name = var.secret_name
-                  key  = env.value
-                }
-              }
+          dynamic "env" {
+            for_each = var.forgejo_token_field == "" ? [] : [1]
+
+            content {
+              name  = "GIT_ASKPASS"
+              value = "/home/node/cline-home/bin/git-askpass"
+            }
+          }
+
+          dynamic "env" {
+            for_each = var.forgejo_token_field == "" ? [] : [1]
+
+            content {
+              name  = "GIT_TERMINAL_PROMPT"
+              value = "0"
             }
           }
 
@@ -244,6 +263,17 @@ resource "kubernetes_deployment_v1" "hand" {
             name       = "mcp-config"
             mount_path = "/home/node/.cline/hands/settings/cline_mcp_settings.json"
             sub_path   = "cline_mcp_settings.json"
+          }
+
+          dynamic "volume_mount" {
+            for_each = var.forgejo_token_field == "" ? [] : [1]
+
+            content {
+              name       = "forgejo-token"
+              mount_path = local.forgejo_token_path
+              sub_path   = "forgejo-token"
+              read_only  = true
+            }
           }
 
           # Transcripts, logs and sessions live in RAM: they die with the pod and never touch a volume.
@@ -395,21 +425,33 @@ resource "kubernetes_deployment_v1" "hand" {
             }
           }
 
-          # ★ THE PEN. A hand that does repo work needs its own credential, mounted as an env for now
-          # (the narrower file-and-GIT_ASKPASS version is a follow-up: an env is inherited by every
-          # child, including a finger's shell).
+          # ★ THE PEN, BY FILE. A hand that does repo work needs its own credential, and it is mounted as
+          # a FILE, not an env: an env is inherited by every child, including a finger's shell. The
+          # askpass helper prints it for the prompt git passes it (see bin/git-askpass).
           dynamic "env" {
-            for_each = var.forgejo_token_field == "" ? [] : [var.forgejo_token_field]
+            for_each = var.forgejo_token_field == "" ? [] : [1]
 
             content {
-              name = "FORGEJO_TOKEN"
+              name  = "FORGEJO_TOKEN_FILE"
+              value = local.forgejo_token_path
+            }
+          }
 
-              value_from {
-                secret_key_ref {
-                  name = var.secret_name
-                  key  = env.value
-                }
-              }
+          dynamic "env" {
+            for_each = var.forgejo_token_field == "" ? [] : [1]
+
+            content {
+              name  = "GIT_ASKPASS"
+              value = "/home/node/cline-home/bin/git-askpass"
+            }
+          }
+
+          dynamic "env" {
+            for_each = var.forgejo_token_field == "" ? [] : [1]
+
+            content {
+              name  = "GIT_TERMINAL_PROMPT"
+              value = "0"
             }
           }
 
@@ -426,6 +468,17 @@ resource "kubernetes_deployment_v1" "hand" {
             name       = "mcp-config"
             mount_path = "/home/node/.cline/hands/settings/cline_mcp_settings.json"
             sub_path   = "cline_mcp_settings.json"
+          }
+
+          dynamic "volume_mount" {
+            for_each = var.forgejo_token_field == "" ? [] : [1]
+
+            content {
+              name       = "forgejo-token"
+              mount_path = local.forgejo_token_path
+              sub_path   = "forgejo-token"
+              read_only  = true
+            }
           }
 
           volume_mount {
@@ -451,6 +504,26 @@ resource "kubernetes_deployment_v1" "hand" {
 
           config_map {
             name = kubernetes_config_map_v1.mcp.metadata[0].name
+          }
+        }
+
+        # ★ THE PEN AS A FILE. Only the one key, so the pod never sees the rest of the Secret; absent
+        # entirely when no forgejo token is configured, which is what keeps a room without a repo
+        # able to start.
+        dynamic "volume" {
+          for_each = var.forgejo_token_field == "" ? [] : [1]
+
+          content {
+            name = "forgejo-token"
+
+            secret {
+              secret_name = var.secret_name
+
+              items {
+                key  = var.forgejo_token_field
+                path = "forgejo-token"
+              }
+            }
           }
         }
 

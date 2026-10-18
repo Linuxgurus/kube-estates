@@ -66,6 +66,20 @@ resource "kubernetes_cron_job_v1" "activity" {
                 value = "/home/node/cline-home"
               }
 
+              # ★ THE TWO SWITCHES THE HAND HAS AND THE BELLS NEVER GOT (measured 2026-10-19: all four
+              # CronJobs carried neither). Without NO_AUTO_UPDATE an unattended `npm update -g cline`
+              # can replace the binary under a running bell; without BACKEND_MODE=local the bell runs
+              # `auto` and may start a hub it never uses in a pod that is about to die.
+              env {
+                name  = "CLINE_NO_AUTO_UPDATE"
+                value = "1"
+              }
+
+              env {
+                name  = "CLINE_SESSION_BACKEND_MODE"
+                value = "local"
+              }
+
               env {
                 name  = "ELLMEPHANT_URL"
                 value = var.brain_url
