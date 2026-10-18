@@ -76,6 +76,16 @@ variable "image_tag" { default = "edge" }
 variable "storage_class" { default = "" }
 variable "storage_size" { default = "2Gi" }
 
+# ★ REUSE A CLAIM THAT ALREADY HOLDS A SELF. A brain that has been MOVED (Velero restore into a new
+# namespace) arrives as an existing PVC; asking the chart to create a fresh one would silently give
+# the new room an EMPTY store — the failure that looks like success ([[store-moves-are-restores]]).
+# The claim must already live in `namespace` and must be the one the restore wrote.
+variable "existing_claim" {
+  type        = string
+  default     = ""
+  description = "Pre-made PVC holding the store; empty = the chart creates one (a NEW brain, not a moved one)."
+}
+
 # ★ 0 = the store is KEPT but not RUNNING (2026-10-17: the old store is a rollback copy; the live
 # self moved to `agent-stet`). Declared rather than scaled by hand, because a hand scale leaves the
 # chart's default (1) in the release and the next apply quietly brings the old self back up.

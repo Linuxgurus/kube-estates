@@ -53,11 +53,15 @@ locals {
     }
 
     # The store (`memory.db`) is the whole point: without it every memory dies with the pod.
-    persistence = {
-      enabled      = true
-      storageClass = var.storage_class
-      size         = var.storage_size
-    }
+    # ★ A MOVED BRAIN REUSES ITS CLAIM: `existingClaim` wins, and storageClass/size are omitted
+    # rather than left to be reinterpreted by the chart.
+    persistence = merge(
+      { enabled = true, existingClaim = var.existing_claim },
+      var.existing_claim == "" ? {
+        storageClass = var.storage_class
+        size         = var.storage_size
+      } : {}
+    )
 
     # Credentials the chart does not know by name: `ELLMEPHANT_IDENTITIES` is a table of
     # `name:secret` pairs, so the values must stay in a Secret rather than in these values.
