@@ -65,6 +65,14 @@ resource "kubernetes_deployment_v1" "hand" {
     # the store claim; the local lock is the same-machine fast path.
     replicas = 1
 
+    # ★ RECREATE, NOT ROLLINGUPDATE (2026-10-18). The home claim is RWO, so a rolling update
+    # deadlocks: the new pod cannot attach the volume while the old pod holds it, and the old pod is
+    # not retired until the new one is Ready. Measured live — `FailedAttachVolume: Volume is already
+    # used by pod(s) stet-hand-…` — and the fix is to stop the old pod BEFORE starting the new one.
+    strategy {
+      type = "Recreate"
+    }
+
     selector {
       match_labels = local.labels
     }
@@ -286,9 +294,12 @@ resource "kubernetes_deployment_v1" "hand" {
           # LIVENESS IS A HEARTBEAT, not a port. The daemon touches $HAND_DIR/heartbeat on every poll
           # (<= 30s); a wedged process stops touching it. A port check cannot see that failure — this
           # morning's hub was listening the whole time it could not reach the store.
+          # ★ THE PROBE MUST USE WHAT THE IMAGE HAS. The first version shelled out to `stat`, which
+          # this image does not ship (no coreutils, no curl, no kill) — a probe that cannot run is a
+          # probe that reads "healthy". Node is guaranteed: it is the runtime the image is built on.
           liveness_probe {
             exec {
-              command = ["/bin/sh", "-c", "test $(( $(date +%s) - $(stat -c %Y /home/node/.cline/hand/heartbeat) )) -lt 120"]
+              command = ["/usr/local/bin/node", "-e", "process.exit(Date.now() - require('fs').statSync('/home/node/.cline/hand/heartbeat').mtimeMs < 120000 ? 0 : 1)"]
             }
 
             initial_delay_seconds = 20
