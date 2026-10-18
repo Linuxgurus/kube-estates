@@ -12,7 +12,15 @@ variable "name" {
 variable "extra_env" {
   type        = any
   default     = []
-  description = "Extra env vars for the brain container. The chart appends them after its built-ins, so a credential can arrive as a secretKeyRef without the chart knowing its name."
+  description = "Extra env vars for the brain container. ★ The 0.2.0 chart's `env` helper concatenates this list WITHOUT a trailing newline and breaks the YAML — prefer `env_from` for injected values."
+}
+
+# ★ ENV FROM SECRETS/CMs. The chart renders `envFrom` on its own (a separate template branch), so it
+# is the safe way to inject `ELLMEPHANT_IDENTITIES` with chart 0.2.0 while `extra_env` is broken.
+variable "env_from" {
+  type        = any
+  default     = []
+  description = "envFrom entries, passed straight to the chart (e.g. [{ secretRef = { name = \"twine-secrets\" } }])."
 }
 
 variable "release_name" {

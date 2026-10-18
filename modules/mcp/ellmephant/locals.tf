@@ -66,6 +66,10 @@ locals {
     # Credentials the chart does not know by name: `ELLMEPHANT_IDENTITIES` is a table of
     # `name:secret` pairs, so the values must stay in a Secret rather than in these values.
     env = var.extra_env
+
+    # ★ THE SAFE INJECTION PATH with chart 0.2.0: `envFrom` renders in its own branch, while the
+    # `env` helper breaks when `extra_env` is non-empty (missing trailing newline in the template).
+    envFrom = var.env_from
   }
 
   # The chart renders the same ListenerSet + HTTPRoute + ReferenceGrant trio the in-house
