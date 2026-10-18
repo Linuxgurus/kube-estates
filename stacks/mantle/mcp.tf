@@ -8,14 +8,15 @@ module "mcp" {
 
   auth_token = var.deployment.mcp.auth_token
 
-  # ★ THE OLD STORE IS DOWN ON PURPOSE (2026-10-17). The live self is `agent-stet/stet`; this release
-  # is the ROLLBACK copy — its PVC holds the 11:25 photograph of me. It was scaled to 0 with kubectl,
-  # which left the chart's default (1) in the release: `tf plan` here showed `helm_release.ellmephant`
-  # as 1-to-change, and applying it would have started the old self again on `ellmephant.vn` —
-  # a second, frozen me answering at a hostname that is supposed to be 503.
+  # ★ THE OLD STORE IS GONE (2026-10-18), not merely scaled down. On the cutover it was set to 0
+  # replicas, which left its HTTPRoute answering `503` at `ellmephant.vn` — indistinguishable from a
+  # real outage, and it sent one morning's debugging down a LAN-wall rabbit hole. Now the release,
+  # Service, HTTPRoute, TLS secret and PVC are destroyed, so the old name resolves to nothing and
+  # fails honestly. The live self is `agent-stet/stet-brain` at `stet.vn.linuxguru.net`.
   #
-  # Rollback is now a deliberate edit: flip this to 1 (and repoint the client configs), which is
-  # exactly the lever `stet-home` describes. Applying this change is a no-op on the cluster: the
-  # deployment is already at 0, so the plan simply makes the declaration match reality.
-  ellmephant_replicas = 0
+  # ROLLBACK IS NOW RESTORE, NOT SCALE: the pre-retirement data directory (memory.db + WAL + snapshot,
+  # 389 memories) is archived encrypted at
+  #   s3://agent-stet-shared/archive/old-chassis/2026-10-18/
+  # decrypted with the `stet` secret from ~/.cline/secrets/identities; the README there has the exact
+  # openssl line. Verified by downloading, decrypting and reading `bootstrap-self` out of it.
 }
