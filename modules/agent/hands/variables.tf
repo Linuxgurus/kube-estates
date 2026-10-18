@@ -152,9 +152,18 @@ variable "memory_request" {
   default = "256Mi"
 }
 
+# ★ 8 GiB (James, 2026-10-18): "your hand and its fingers is one of the most important things here".
+# The limit is a CEILING, not a reservation — the request stays 256Mi, so this costs the cluster
+# nothing sitting idle. It is here so a finger with a large context can finish instead of being
+# OOMKilled halfway through, taking the hub and the daemon with it.
+#
+# MEASURED 2026-10-18 before the change: hub 160 MB, daemon 3 MB, door 21 MB, used ~184 MB of 2 Gi.
+# A single finger fits easily today; the number that is still unmeasured is a FINGER's own RSS.
+# NO CPU LIMIT IS SET (only a 100m request), so a finger may burst across every core — deliberate.
 variable "memory_limit" {
-  type    = string
-  default = "2Gi"
+  type        = string
+  default     = "8Gi"
+  description = "Ceiling for the hand's containers. A limit, not a request: idle cost is unchanged."
 }
 
 # The roster. A CronJob is a BELL: it runs `bin/hands --activity <name>`, whose predicate costs
