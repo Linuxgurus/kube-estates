@@ -142,6 +142,12 @@ resource "kubernetes_deployment_v1" "hand" {
             value = tostring(var.port)
           }
 
+          # The door spawns hands, which spawn fingers: same rule, no self-updating binary.
+          env {
+            name  = "CLINE_NO_AUTO_UPDATE"
+            value = "1"
+          }
+
           # ★ bin/store and bin/hands read the store from THIS, not from the MCP config. Without it a
           # hand in a new room banks and claims against the old one — which is exactly the split-brain
           # the move exists to avoid.
@@ -336,6 +342,22 @@ resource "kubernetes_deployment_v1" "hand" {
           env {
             name  = "HAND_TIMEOUT"
             value = "3600"
+          }
+
+          # ★ NO HUB (2026-10-18). Fingers are 3-second runs, one at a time, so a shared hub buys a
+          # warm cache and costs a long-lived connector that can wedge — which is exactly what
+          # happened at 06:30. Measured: hubless answered in the same 3s and left no hub process.
+          env {
+            name  = "CLINE_SESSION_BACKEND_MODE"
+            value = "local"
+          }
+
+          # ★ AND NO SELF-UPDATING BINARY. The image shipped cline 3.0.71 and an unattended
+          # `npm update -g cline` replaced it under a running hub (the hub PIDs changed mid-session).
+          # A hand whose binary can change without a deploy is not something to reason about.
+          env {
+            name  = "CLINE_NO_AUTO_UPDATE"
+            value = "1"
           }
 
           env {
