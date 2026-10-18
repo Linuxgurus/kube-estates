@@ -165,6 +165,14 @@ resource "kubernetes_deployment_v1" "hand" {
             value = local.mail_me
           }
 
+          # ★ THE HAND SERVES A SELF, so it must be allowed to read that self mail: the identity is
+          # `hands`, the box is `stet`. The store refuses a foreign box unless the surrogate map says
+          # so out loud (2026-10-18 mail privacy).
+          env {
+            name  = "ELLMEPHANT_MAIL_SURROGATES"
+            value = "${var.identity}=${local.mail_me}"
+          }
+
           env {
             name = "DEEPSEEK_API_KEY"
 
@@ -330,6 +338,11 @@ resource "kubernetes_deployment_v1" "hand" {
           env {
             name  = "MAIL_ME"
             value = local.mail_me
+          }
+
+          env {
+            name  = "ELLMEPHANT_MAIL_SURROGATES"
+            value = "${var.identity}=${local.mail_me}"
           }
 
           # The finger's own ceiling, and the pod's active deadline is longer than this.
