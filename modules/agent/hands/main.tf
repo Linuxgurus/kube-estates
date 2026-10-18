@@ -266,6 +266,141 @@ resource "kubernetes_deployment_v1" "hand" {
           }
         }
 
+        # ★ THE RESIDENT HAND (2026-10-18). Not a bell: one long-lived process that BLOCKS on the
+        # mailbox (MCP long-poll) and runs at most ONE finger per letter. It shares this pod with the
+        # door because the home claim is RWO — two pods cannot mount it, two containers can — and
+        # because a hand that shares the door's lifetime is a hand that restarts with it.
+        container {
+          name  = "handd"
+          image = "${var.image_repository}:${var.image_tag}"
+
+          image_pull_policy = "Always"
+
+          command = ["/home/node/cline-home/bin/stet-hand", "--daemon"]
+
+          resources {
+            requests = { cpu = var.cpu_request, memory = var.memory_request }
+            limits   = { memory = var.memory_limit }
+          }
+
+          # LIVENESS IS A HEARTBEAT, not a port. The daemon touches $HAND_DIR/heartbeat on every poll
+          # (<= 30s); a wedged process stops touching it. A port check cannot see that failure — this
+          # morning's hub was listening the whole time it could not reach the store.
+          liveness_probe {
+            exec {
+              command = ["/bin/sh", "-c", "test $(( $(date +%s) - $(stat -c %Y /home/node/.cline/hand/heartbeat) )) -lt 120"]
+            }
+
+            initial_delay_seconds = 20
+            period_seconds        = 30
+            failure_threshold     = 3
+          }
+
+          env {
+            name  = "HOME"
+            value = "/home/node"
+          }
+
+          env {
+            name  = "CLINE_HOME"
+            value = "/home/node/cline-home"
+          }
+
+          env {
+            name  = "ELLMEPHANT_URL"
+            value = var.brain_url
+          }
+
+          env {
+            name  = "MAIL_URL"
+            value = local.brain_root
+          }
+
+          env {
+            name  = "MAIL_ME"
+            value = local.mail_me
+          }
+
+          # The finger's own ceiling, and the pod's active deadline is longer than this.
+          env {
+            name  = "HAND_TIMEOUT"
+            value = "3600"
+          }
+
+          env {
+            name = "DEEPSEEK_API_KEY"
+
+            value_from {
+              secret_key_ref {
+                name = var.secret_name
+                key  = var.model_key_field
+              }
+            }
+          }
+
+          dynamic "env" {
+            for_each = var.identity == "" ? [] : [var.identity]
+
+            content {
+              name  = "ELLMEPHANT_IDENTITY"
+              value = env.value
+            }
+          }
+
+          dynamic "env" {
+            for_each = var.identity == "" ? [] : [1]
+
+            content {
+              name = "ELLMEPHANT_IDENTITY_SECRET"
+
+              value_from {
+                secret_key_ref {
+                  name = var.secret_name
+                  key  = var.identity_secret_field
+                }
+              }
+            }
+          }
+
+          # ★ THE PEN. A hand that does repo work needs its own credential, mounted as an env for now
+          # (the narrower file-and-GIT_ASKPASS version is a follow-up: an env is inherited by every
+          # child, including a finger's shell).
+          dynamic "env" {
+            for_each = var.forgejo_token_field == "" ? [] : [var.forgejo_token_field]
+
+            content {
+              name = "FORGEJO_TOKEN"
+
+              value_from {
+                secret_key_ref {
+                  name = var.secret_name
+                  key  = env.value
+                }
+              }
+            }
+          }
+
+          dynamic "volume_mount" {
+            for_each = var.home_claim == "" ? [] : [var.home_claim]
+
+            content {
+              name       = "home"
+              mount_path = "/home/node/cline-home"
+            }
+          }
+
+          volume_mount {
+            name       = "mcp-config"
+            mount_path = "/home/node/.cline/hands/settings/cline_mcp_settings.json"
+            sub_path   = "cline_mcp_settings.json"
+          }
+
+          volume_mount {
+            name       = "ephemeral"
+            mount_path = "/home/node/cline-home/.tmp"
+          }
+        }
+
         dynamic "volume" {
           for_each = var.home_claim == "" ? [] : [var.home_claim]
 
