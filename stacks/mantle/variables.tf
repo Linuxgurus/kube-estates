@@ -17,5 +17,5 @@ variable "deployment" { type = any }
 # lives, or the next apply tears the secret off a path nothing owns.
 variable "forgejo_registry_repos" {
   type    = list(string)
-  default = ["soma/ellmephant", "soma/hands", "soma/spine", "Linuxguru/sighup"]
+  default = ["soma/ellmephant", "soma/hands", "soma/spine", "cline/soma-hands", "cline/stet", "Linuxguru/sighup"]
 }
