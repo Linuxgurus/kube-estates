@@ -89,16 +89,33 @@ resource "kubernetes_deployment_v1" "hand" {
           # LIVENESS IS A HEARTBEAT, not a port. The daemon touches $HAND_DIR/heartbeat on every poll
           # (<= 30s); a wedged process stops touching it. A port check cannot see that failure — this
           # morning's hub was listening the whole time it could not reach the store.
-          # ★ THE PROBE MUST USE WHAT THE IMAGE HAS. The first version shelled out to `stat`, which
-          # this image does not ship (no coreutils, no curl, no kill) — a probe that cannot run is a
-          # probe that reads "healthy". Node is guaranteed: it is the runtime the image is built on.
+          # ★ THE PROBE IS A SHELL TEST NOW (2026-10-19). It used to fork NODE every 30 seconds to
+          # stat one file — a whole JS runtime per probe. `date`, `stat` and `sh` are all in the tools
+          # image (measured), so this is arithmetic, no runtime.
+          #
+          # ★ LIVENESS STAYS EXEC-BASED ON PURPOSE: a kubelet httpGet comes from the NODE, and the
+          # baseline ingress policy admits only this namespace and prometheus — so pointing liveness at
+          # /healthz without a host-network rule would crash-loop the hand on its own probe.
+          # READINESS uses /healthz (`bin/hand-health`), where a false negative costs an endpoint, not
+          # a pod, and that is how we find out whether the probe is reachable before trusting it.
           liveness_probe {
             exec {
-              command = ["/usr/local/bin/node", "-e", "process.exit(Date.now() - require('fs').statSync('/home/node/.cline/hand/heartbeat').mtimeMs < 120000 ? 0 : 1)"]
+              command = ["/bin/sh", "-c", "test $(( $(date +%s) - $(stat -c %Y /home/node/.cline/hand/heartbeat) )) -lt 120"]
             }
 
             initial_delay_seconds = 20
             period_seconds        = 30
+            failure_threshold     = 3
+          }
+
+          readiness_probe {
+            http_get {
+              path = "/healthz"
+              port = 8080
+            }
+
+            initial_delay_seconds = 10
+            period_seconds        = 15
             failure_threshold     = 3
           }
 
