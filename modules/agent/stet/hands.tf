@@ -21,6 +21,9 @@ module "hands" {
   gateway_namespace = var.gateway_namespace
   expose            = var.hands_expose
 
+  # ★ The room opts in to broad cluster power (James 2026-10-19). Off unless asked for.
+  cluster_admin     = var.cluster_admin
+
   brain_url = local.brain_url
 
   # The mailbox is the SELF, not the hand: `stet`, not `stet-hand`.

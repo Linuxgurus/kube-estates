@@ -11,7 +11,11 @@ variable "deployment" { type = any }
 # PRE-EXISTING repos that is not the default. See modules/devops/forgejo/mantle/repos.tf.
 # Moved to the `Linuxguru` org 2026-10-14. A transfer keeps the repo id, so these are the same
 # repos -- but the `for_each` KEYS change, so the next apply recreates the four secrets in place.
+#
+# ★ ellmephant moved AGAIN, to `soma`, on 2026-10-19 (the body's own org). The repo id is still the
+# same, so the Harbor credentials travel with it -- but this list must name the repo where it NOW
+# lives, or the next apply tears the secret off a path nothing owns.
 variable "forgejo_registry_repos" {
   type    = list(string)
-  default = ["Linuxguru/ellmephant", "Linuxguru/sighup"]
+  default = ["soma/ellmephant", "Linuxguru/sighup"]
 }
