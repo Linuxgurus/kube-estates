@@ -3,23 +3,15 @@ locals {
   labels     = { "app.kubernetes.io/name" = var.name, "app.kubernetes.io/part-of" = "agent" }
   health_url = coalesce(one([for u in [var.brain_health_url] : u if u != ""]), replace(var.brain_url, "/mcp", "/health"))
 
-  # ★ MAIL GOES IN-CLUSTER, NEVER VIA THE PUBLIC NAME. The public host resolves to the LAN gateway,
-  # which a pod has no route to; `bin/mail`'s own default is that public name.
+  # ★ MAIL GOES IN-CLUSTER, NEVER VIA THE PUBLIC NAME. The public host resolves to the LAN gateway;
+  # a pod reaching it would leave the cluster for the host network and come back — measured possible
+  # on 2026-10-19, but pointless for a service in this namespace. `bin/mail`'s default is that name.
   brain_root = trimsuffix(var.brain_url, "/mcp")
   mail_me    = var.mail_me == "" ? trimsuffix(var.name, "-hand") : var.mail_me
 
   # ★ THE PEN, BY FILE. ONE path, used by the secret mount, the mount_path and FORGEJO_TOKEN_FILE, so
   # moving it is a single edit instead of three that can drift apart.
   forgejo_token_path = "/home/node/.cline/hands/secrets/forgejo-token"
-}
-
-data "kubernetes_service_v1" "repo_gateway" {
-  count = var.repo_host == "" ? 0 : 1
-
-  metadata {
-    name      = var.repo_gateway_service != "" ? var.repo_gateway_service : "${var.gateway_name}-${var.gateway_name}"
-    namespace = var.gateway_namespace
-  }
 }
 
 # The finger's MCP config: the SAME store as the hand, reached in-namespace. One brain per room is the
@@ -68,29 +60,13 @@ resource "kubernetes_deployment_v1" "hand" {
       }
 
       spec {
-        # ★ THE NAME MUST MEAN SOMETHING IN HERE. Keeping the NAME means Host and SNI stay right, so
-        # the certificate validates and Forgejo never learns that a tenant exists.
-        #
-        # ★ CORRECTED 2026-10-19: this comment used to claim "a pod cannot route the LAN VIP". That is
-        # MEASURED FALSE — from this pod, `curl --resolve git.…:443:<vip>` with a token returns 200,
-        # and the gateway-peer egress rule (`pod_selector gateway-name`) admits the traffic whether it
-        # arrives at the VIP or the ClusterIP, which is exactly what modules/devops/forgejo-runner
-        # relies on when it says "reach them by their gateway names". So this alias is a HOP-SAVING
-        # shortcut (git traffic stays inside the cluster instead of going out to the host-network
-        # VIP), NOT a necessity.
-        #
-        # It also costs a permanent `(known after apply)` in every plan, because the IP comes from a
-        # data source. Removing it is a fair tidy-up — do it when the hand is being rolled anyway, and
-        # verify `git ls-remote` by name from the new pod afterwards.
-        dynamic "host_aliases" {
-          for_each = var.repo_host == "" ? [] : [1]
-
-          content {
-            ip        = data.kubernetes_service_v1.repo_gateway[0].spec[0].cluster_ip
-            hostnames = [var.repo_host]
-          }
-        }
-
+        # ★ NO HOST ALIAS (2026-10-19). It used to pin `repo_host` to the gateway's ClusterIP,
+        # justified by "a pod cannot route the LAN VIP". MEASURED FALSE: from this pod, a request to
+        # the VIP with a token returns 200, and the gateway-peer egress rule admits the traffic either
+        # way. The house pattern is to reach services by their GATEWAY NAMES with a peer on the
+        # gateway pods (modules/devops/forgejo-runner does exactly this) — no Service IP pinned, no
+        # permanent `(known after apply)` in every plan, and one fewer thing that can drift when the
+        # gateway moves.
         service_account_name = kubernetes_service_account_v1.hand.metadata[0].name
 
         security_context {
