@@ -154,3 +154,9 @@ variable "forgejo_token_field" {
   default     = ""
   description = "Key in `secret_name` with a Forgejo HTTP token. Empty = no FORGEJO_TOKEN."
 }
+
+variable "cluster_admin" {
+  type        = bool
+  default     = false
+  description = "Pass through to the hands module: bind the hand's ServiceAccount to cluster-admin."
+}

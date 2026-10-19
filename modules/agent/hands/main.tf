@@ -38,25 +38,6 @@ resource "kubernetes_config_map_v1" "mcp" {
   }
 }
 
-resource "kubernetes_service_v1" "door" {
-  metadata {
-    name      = var.name
-    namespace = var.namespace
-    labels    = local.labels
-  }
-
-  spec {
-    type     = "ClusterIP"
-    selector = local.labels
-
-    port {
-      name        = "door"
-      port        = 80
-      target_port = "door"
-    }
-  }
-}
-
 resource "kubernetes_deployment_v1" "hand" {
   metadata {
     name      = var.name
@@ -100,220 +81,12 @@ resource "kubernetes_deployment_v1" "hand" {
           }
         }
 
+        service_account_name = kubernetes_service_account_v1.hand.metadata[0].name
+
         security_context {
           fs_group = 1000
         }
 
-        container {
-          name  = "door"
-          image = "${var.image_repository}:${var.image_tag}"
-
-          # A moving tag + IfNotPresent is a restart that silently runs the old build.
-          image_pull_policy = "Always"
-
-          resources {
-            requests = { cpu = var.cpu_request, memory = var.memory_request }
-            limits   = { memory = var.memory_limit }
-          }
-
-          port {
-            name           = "door"
-            container_port = var.port
-          }
-
-          readiness_probe {
-            http_get {
-              path = "/healthz"
-              port = "door"
-            }
-
-            initial_delay_seconds = 3
-            period_seconds        = 10
-          }
-
-          env {
-            name  = "HOME"
-            value = "/home/node"
-          }
-
-          env {
-            name  = "CLINE_HOME"
-            value = "/home/node/cline-home"
-          }
-
-          env {
-            name  = "HANDS_DOOR_PORT"
-            value = tostring(var.port)
-          }
-
-          # The door spawns hands, which spawn fingers: same rule, no self-updating binary.
-          env {
-            name  = "CLINE_NO_AUTO_UPDATE"
-            value = "1"
-          }
-
-          # ★ bin/store and bin/hands read the store from THIS, not from the MCP config. Without it a
-          # hand in a new room banks and claims against the old one — which is exactly the split-brain
-          # the move exists to avoid.
-          env {
-            name  = "ELLMEPHANT_URL"
-            value = var.brain_url
-          }
-
-          env {
-            name  = "ELLMEPHANT_HEALTH_URL"
-            value = local.health_url
-          }
-
-          env {
-            name  = "MAIL_URL"
-            value = local.brain_root
-          }
-
-          env {
-            name  = "MAIL_ME"
-            value = local.mail_me
-          }
-
-          env {
-            name = "DEEPSEEK_API_KEY"
-
-            value_from {
-              secret_key_ref {
-                name = var.secret_name
-                key  = var.model_key_field
-              }
-            }
-          }
-
-          env {
-            name = "HANDS_DOOR_TOKEN"
-
-            value_from {
-              secret_key_ref {
-                name = var.secret_name
-                key  = var.door_token_field
-              }
-            }
-          }
-
-          # ★ WHO IS SPEAKING. A finger that cannot prove its name writes as `anonymous` — and since
-          # the store's `ELLMEPHANT_LEASERS` names this identity, an anonymous hand cannot take a lease
-          # at all (measured 2026-10-17: the deployment had no identity, so PROTECTED writes from the
-          # finger were impossible while the image looked fine). BOTH OR NEITHER: the client sends the
-          # pair, and the store refuses a name without its proof, so a half-set pair fails loudly.
-          dynamic "env" {
-            for_each = var.identity == "" ? [] : [var.identity]
-
-            content {
-              name  = "ELLMEPHANT_IDENTITY"
-              value = env.value
-            }
-          }
-
-          dynamic "env" {
-            for_each = var.identity == "" ? [] : [1]
-
-            content {
-              name = "ELLMEPHANT_IDENTITY_SECRET"
-
-              value_from {
-                secret_key_ref {
-                  name = var.secret_name
-                  key  = var.identity_secret_field
-                }
-              }
-            }
-          }
-
-          # ★ MY OWN GIT CREDENTIAL, AND ONLY MINE — NOW A FILE, NOT AN ENV. A token in the environment
-          # is inherited by every child, including a finger's shell, so anything the agent runs can read
-          # it; a mounted file is only readable by something that knows the path. `git-askpass` prints it
-          # for the prompt git passes it, and `GIT_TERMINAL_PROMPT=0` makes a missing credential FAIL
-          # instead of hanging a finger on a hidden prompt. Absent by default (a room with no forgejo
-          # must not fail to start over a missing key).
-          dynamic "env" {
-            for_each = var.forgejo_token_field == "" ? [] : [1]
-
-            content {
-              name  = "FORGEJO_TOKEN_FILE"
-              value = local.forgejo_token_path
-            }
-          }
-
-          dynamic "env" {
-            for_each = var.forgejo_token_field == "" ? [] : [1]
-
-            content {
-              name  = "GIT_ASKPASS"
-              value = "/home/node/cline-home/bin/git-askpass"
-            }
-          }
-
-          dynamic "env" {
-            for_each = var.forgejo_token_field == "" ? [] : [1]
-
-            content {
-              name  = "GIT_TERMINAL_PROMPT"
-              value = "0"
-            }
-          }
-
-          volume_mount {
-            name       = "mcp-config"
-            mount_path = "/home/node/.cline/hands/settings/cline_mcp_settings.json"
-            sub_path   = "cline_mcp_settings.json"
-          }
-
-          dynamic "volume_mount" {
-            for_each = var.forgejo_token_field == "" ? [] : [1]
-
-            content {
-              name       = "forgejo-token"
-              mount_path = local.forgejo_token_path
-              sub_path   = "forgejo-token"
-              read_only  = true
-            }
-          }
-
-          # Transcripts, logs and sessions live in RAM: they die with the pod and never touch a volume.
-          # ★ THE HOME, OVER THE IMAGE'S COPY. Mounted before the `.tmp` submount below so the baked
-          # `bin/` and `dist/` are replaced wholesale by the claim — the image becomes the installer,
-          # not the record. `.tmp` stays an emptyDir even here: scratch is supposed to be disposable.
-          dynamic "volume_mount" {
-            for_each = var.home_claim == "" ? [] : [var.home_claim]
-
-            content {
-              name       = "home"
-              mount_path = "/home/node/cline-home"
-            }
-          }
-
-          volume_mount {
-            name       = "ephemeral"
-            mount_path = "/home/node/cline-home/.tmp"
-          }
-
-          volume_mount {
-            name       = "ephemeral"
-            mount_path = "/home/node/.cline/hands/logs"
-          }
-
-          volume_mount {
-            name       = "ephemeral"
-            mount_path = "/home/node/.cline/hands/sessions"
-          }
-
-          volume_mount {
-            name       = "ephemeral"
-            mount_path = "/home/node/.cline/hands/db"
-          }
-        }
-
-        # ★ THE RESIDENT HAND (2026-10-18). Not a bell: one long-lived process that BLOCKS on the
-        # mailbox (MCP long-poll) and runs at most ONE finger per letter. It shares this pod with the
-        # door because the home claim is RWO — two pods cannot mount it, two containers can — and
-        # because a hand that shares the door's lifetime is a hand that restarts with it.
         container {
           name  = "handd"
           image = "${var.image_repository}:${var.image_tag}"
@@ -537,5 +310,41 @@ resource "kubernetes_deployment_v1" "hand" {
         }
       }
     }
+  }
+}
+
+# ★ A NAMED SERVICE ACCOUNT, NOT `default`. Everything here that never asked for an identity shares
+# `default`, so binding a cluster-wide role to it would hand the same power to anything anyone deploys
+# in this room later. One account, one binding, revocable in one place.
+resource "kubernetes_service_account_v1" "hand" {
+  metadata {
+    name      = var.name
+    namespace = var.namespace
+    labels    = local.labels
+  }
+}
+
+# ★ CLUSTER-ADMIN BY INTENT (James, 2026-10-19): the hand maintains the cluster alongside him, and
+# fingers need to do real work in k8s. The cost is stated once, here: a finger is a model process that
+# reads text it did not write, so this is a power that a hostile prompt could borrow. Off by default
+# in the module; the room opts in.
+resource "kubernetes_cluster_role_binding_v1" "hand" {
+  count = var.cluster_admin ? 1 : 0
+
+  metadata {
+    name   = "${var.namespace}-${var.name}-cluster-admin"
+    labels = local.labels
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "cluster-admin"
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account_v1.hand.metadata[0].name
+    namespace = var.namespace
   }
 }

@@ -3,22 +3,6 @@
 # completely unreachable: cert issued, ListenerSet Programmed, HTTPRoute created, and every request
 # from the gateway dropped by the fence. Measured 2026-10-17 on the first greenfield apply.
 # One pod, one port: the door.
-module "ingress_gateway" {
-  source = "../../network/firewalls/policy"
-  count  = var.expose ? 1 : 0
-
-  direction    = "ingress"
-  namespace    = var.namespace
-  name         = "${var.name}-door-ingress"
-  pod_selector = local.labels
-
-  peers = [{
-    namespace    = var.gateway_namespace
-    pod_selector = { "gateway.networking.k8s.io/gateway-name" = var.gateway_name }
-    ports        = [{ port = var.port }]
-  }]
-}
-
 # ★ THE REPO IS IN ANOTHER ROOM, SO IT NEEDS ITS OWN DOOR. `allow_internet` is 0.0.0.0/0 MINUS the
 # LAN, and Forgejo is an in-cluster ClusterIP — so a hand with "internet" still cannot reach the place
 # its own code lives. Measured 2026-10-17 from `stet-hand`: DNS resolved `forgejo-http` to
@@ -62,4 +46,10 @@ module "egress_internet" {
   name           = "${var.name}-internet-egress"
   pod_selector   = local.labels
   allow_internet = true
+  # ★ THE CLUSTER API IS NOT REACHABLE BY THE INTERNET RULE, AND IT IS WHERE A FINGER NOW WORKS.
+  # `allow_internet` is 0.0.0.0/0 MINUS the private CIDRs, and kube-proxy DNATs the API Service ClusterIP
+  # to the control-plane node's LAN address BEFORE policy is evaluated - so measured 2026-10-19 from
+  # `handd`: `kubernetes.default.svc` TIMES OUT, it does not 403. The module's own rule handles exactly
+  # this (node CIDR on 6443 plus the ClusterIP on 443); it is simply off by default.
+  allow_k8s_api = true
 }

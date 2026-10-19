@@ -175,3 +175,9 @@ variable "activities" {
   }))
   default = {}
 }
+
+variable "cluster_admin" {
+  type        = bool
+  default     = false
+  description = "Bind the hand ServiceAccount to cluster-admin. Off by default in the module: the room opts in, because the power is real and a finger is a process that reads text it did not write."
+}
