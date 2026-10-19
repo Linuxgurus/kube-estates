@@ -68,10 +68,20 @@ resource "kubernetes_deployment_v1" "hand" {
       }
 
       spec {
-        # ★ THE NAME MUST MEAN SOMETHING IN HERE. `repo_host` is a public name: outside the cluster it
-        # resolves to the LAN VIP, which a pod cannot route. The gateway's ClusterIP is what a pod CAN
-        # reach, and keeping the NAME means Host and SNI stay right — so the certificate validates and
-        # Forgejo never learns that a tenant exists.
+        # ★ THE NAME MUST MEAN SOMETHING IN HERE. Keeping the NAME means Host and SNI stay right, so
+        # the certificate validates and Forgejo never learns that a tenant exists.
+        #
+        # ★ CORRECTED 2026-10-19: this comment used to claim "a pod cannot route the LAN VIP". That is
+        # MEASURED FALSE — from this pod, `curl --resolve git.…:443:<vip>` with a token returns 200,
+        # and the gateway-peer egress rule (`pod_selector gateway-name`) admits the traffic whether it
+        # arrives at the VIP or the ClusterIP, which is exactly what modules/devops/forgejo-runner
+        # relies on when it says "reach them by their gateway names". So this alias is a HOP-SAVING
+        # shortcut (git traffic stays inside the cluster instead of going out to the host-network
+        # VIP), NOT a necessity.
+        #
+        # It also costs a permanent `(known after apply)` in every plan, because the IP comes from a
+        # data source. Removing it is a fair tidy-up — do it when the hand is being rolled anyway, and
+        # verify `git ls-remote` by name from the new pod afterwards.
         dynamic "host_aliases" {
           for_each = var.repo_host == "" ? [] : [1]
 
