@@ -23,7 +23,11 @@ variable "http_port" {
 
 variable "image" { default = "ghcr.io/goauthentik/proxy" }
 
-variable "image_tag" { default = "2025.10.3" }
+variable "image_tag" {
+  type        = string
+  default     = "2026.8.2"
+  description = "Must match the authentik server version, or authentik flags the outpost as outdated."
+}
 
 variable "session_validity" {
   type        = string
