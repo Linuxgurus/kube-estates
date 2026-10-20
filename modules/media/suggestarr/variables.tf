@@ -4,7 +4,7 @@ variable "domain" { type = string }
 variable "name" { default = "suggestarr" }
 
 variable "image" { default = "ghcr.io/giuseppe99barchetta/suggestarr" }
-variable "image_tag" { default = "v2.15.0" }
+variable "image_tag" { default = "v2.16.1" }
 
 variable "web_port" { default = 5000 }
 

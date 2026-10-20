@@ -14,7 +14,7 @@ variable "auth_gateway_namespace" { default = "kube-network" }
 variable "helm_version" { default = "0.13.4" }
 
 # Server and machine-learning move together: they are the same Immich release.
-variable "image_tag" { default = "v3.3.0" }
+variable "image_tag" { default = "v3.3.3" }
 
 variable "storage_class" { default = "longhorn" }
 
@@ -23,7 +23,8 @@ variable "ml_cache_size" { default = "10Gi" }
 variable "postgres_image" { default = "ghcr.io/immich-app/postgres" }
 
 # VectorChord is not optional: the server refuses to boot without a supported version.
-variable "postgres_image_tag" { default = "17-vectorchord0.4.3-pgvector0.8.0" }
+# vchord 1.x needs `ALTER EXTENSION vchord UPDATE` + REINDEX once this image is live.
+variable "postgres_image_tag" { default = "17-vectorchord1.1.1-pgvector0.8.5" }
 variable "postgres_size" { default = "20Gi" }
 
 variable "metrics_enabled" { default = true }

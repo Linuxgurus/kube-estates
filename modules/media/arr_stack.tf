@@ -73,7 +73,7 @@ module "sonarr" {
   name              = "sonarr"
   helm_repo         = "oci://ghcr.io/m0nsterrr/helm-charts"
   chart             = "sonarr"
-  helm_version      = "2.2.3"
+  helm_version      = "2.3.0"
   domain            = var.domain
   cert_issuer       = var.cert_issuer
   gateway_name      = var.gateway_name
@@ -98,7 +98,7 @@ module "prowlarr" {
   name              = "prowlarr"
   helm_repo         = "oci://ghcr.io/m0nsterrr/helm-charts"
   chart             = "prowlarr"
-  helm_version      = "3.8.4"
+  helm_version      = "3.9.0"
   domain            = var.domain
   cert_issuer       = var.cert_issuer
   gateway_name      = var.gateway_name
@@ -118,7 +118,7 @@ module "bazarr" {
   name              = "bazarr"
   helm_repo         = "oci://ghcr.io/m0nsterrr/helm-charts"
   chart             = "bazarr"
-  helm_version      = "2.3.1"
+  helm_version      = "2.4.0"
   domain            = var.domain
   cert_issuer       = var.cert_issuer
   gateway_name      = var.gateway_name
@@ -143,7 +143,7 @@ module "seerr" {
   name              = "seerr"
   helm_repo         = "oci://ghcr.io/seerr-team/seerr"
   chart             = "seerr-chart"
-  helm_version      = "3.9.1"
+  helm_version      = "3.10.0"
   domain            = var.domain
   cert_issuer       = var.cert_issuer
   gateway_name      = var.gateway_name

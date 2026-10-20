@@ -4,7 +4,7 @@ variable "domain" { type = string }
 variable "name" { default = "qbittorrent" }
 
 variable "image" { default = "lscr.io/linuxserver/qbittorrent" }
-variable "image_tag" { default = "5.2.3_v2.0.14-ls475" }
+variable "image_tag" { default = "5.2.4_v2.0.15-ls481" }
 
 variable "web_port" { default = 8080 }
 variable "torrent_port" { default = 21010 }
