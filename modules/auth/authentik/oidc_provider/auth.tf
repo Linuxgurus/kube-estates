@@ -18,13 +18,6 @@ resource "authentik_certificate_key_pair" "signing" {
   key_data         = tls_private_key.signing.private_key_pem
 }
 
-# Owned here rather than left to authentik: rotation is then a `-replace` on this resource and an
-# in-place provider update, never a delete+create of the provider the application binds to.
-resource "random_password" "client_secret" {
-  length  = 64
-  special = false
-}
-
 data "authentik_flow" "default-authorization-flow" {
   slug = "default-provider-authorization-implicit-consent"
 }
@@ -107,7 +100,6 @@ resource "authentik_property_mapping_provider_scope" "profile" {
 resource "authentik_provider_oauth2" "oauth2" {
   name               = var.name
   client_id          = coalesce(var.client_id, var.name)
-  client_secret      = random_password.client_secret.result
   invalidation_flow  = data.authentik_flow.default-provider-invalidation-flow.id
   authorization_flow = data.authentik_flow.default-authorization-flow.id
   signing_key        = authentik_certificate_key_pair.signing.id
