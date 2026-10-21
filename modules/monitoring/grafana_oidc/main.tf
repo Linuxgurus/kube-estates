@@ -15,6 +15,8 @@ resource "kubernetes_secret_v1_data" "oidc" {
     name      = "${var.name}-oidc"
     namespace = var.namespace
   }
+  # The field is owned by an older provider's field manager; force lets this apply take it.
+  force = true
   data = {
     client_id     = module.auth.client_id
     client_secret = module.auth.client_secret
