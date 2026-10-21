@@ -25,8 +25,10 @@ module "plex" {
       PLEX_GID   = local.arr_run_as.runAsGroup
     }
     # No i915 request: the image ships no VA-API driver, so hardware transcoding only stalls the stream.
-    pms   = { configStorage = "30Gi" }
-    image = { tag = "latest", pullPolicy = "Always" }
+    pms = { configStorage = "30Gi" }
+    # Pinned, not `latest`: 1.43.5 carries three (Security) fixes and went public 2026-10-20. A
+    # moving tag hides which version is deployed, and only repulls when the pod happens to restart.
+    image = { tag = "1.43.5.11029-6bf8af3f0", pullPolicy = "Always" }
 
     # Anchor label for co-location: the other library consumers use podAffinity to
     # follow this pod's node so they all share one node-local SeaweedFS read cache.

@@ -4,3 +4,7 @@ terraform.tfvars
 .DS_Store
 .tmp/
 
+
+# terraform plan files carry every variable value in clear
+stacks/*/plan.bin
+*.tfplan
