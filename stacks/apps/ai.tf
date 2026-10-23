@@ -1,5 +1,5 @@
 module "ai_deployment" {
-  source           = "../../modules/devops/argo/aoa_deployment"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/devops/argo/aoa_deployment?ref=v0.1.0"
   name             = var.ai_namespace
   argo_namespace   = var.ai_argo_namespace
   create_namespace = var.ai_create_namespace

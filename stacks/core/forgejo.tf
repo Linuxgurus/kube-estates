@@ -4,7 +4,7 @@
 # authentik blueprint rather than the authentik provider: this stack has no provider API token, and
 # a blueprint is the delivery mechanism authentik applies by itself.
 module "forgejo_oidc" {
-  source = "../../modules/auth/authentik/oidc_blueprint"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/auth/authentik/oidc_blueprint?ref=v0.1.0"
 
   namespace   = kubernetes_namespace_v1.auth.metadata[0].name
   name        = "forgejo"
@@ -16,7 +16,7 @@ module "forgejo_oidc" {
 }
 
 module "forgejo" {
-  source = "../../modules/devops/forgejo/core"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/devops/forgejo/core?ref=v0.1.0"
 
   domain       = var.deployment.cluster.domains.private
   cert_issuer  = var.deployment.cert_manager.external_issuer

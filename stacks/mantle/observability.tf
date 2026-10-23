@@ -1,5 +1,5 @@
 module "whisker" {
-  source = "../../modules/network/whisker"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/network/whisker?ref=v0.1.0"
 
   namespace   = "calico-system"
   domain      = var.deployment.cluster.domains.private

@@ -1,5 +1,5 @@
 module "pastebin" {
-  source = "../../modules/pastebin"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/pastebin?ref=v0.1.0"
 
   # Public app: anyone with a share link can download it from the internet.
   domain      = var.deployment.cluster.domains.public

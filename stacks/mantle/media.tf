@@ -1,5 +1,5 @@
 module "media" {
-  source      = "../../modules/media"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/media?ref=v0.1.0"
   domain      = var.deployment.cluster.domains.private
   cert_issuer = var.deployment.cert_manager.external_issuer
   domains     = var.deployment.cluster.domains

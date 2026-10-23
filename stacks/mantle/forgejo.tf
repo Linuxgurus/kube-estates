@@ -35,7 +35,7 @@ data "external" "forgejo_runner_token" {
 # The Actions runner: its own namespace (it executes arbitrary repo code) and it polls the
 # instance over its public name, through the same gateway as everyone else.
 module "forgejo_runner" {
-  source = "../../modules/devops/forgejo-runner"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/devops/forgejo-runner?ref=v0.1.0"
 
   instance_url       = "https://git.${var.deployment.cluster.domains.private}"
   registration_token = data.external.forgejo_runner_token.result.token

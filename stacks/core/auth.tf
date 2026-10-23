@@ -16,7 +16,7 @@ locals {
 }
 
 module "authentik" {
-  source      = "../../modules/auth/authentik/core"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/auth/authentik/core?ref=v0.1.0"
   namespace   = "kube-auth"
   domain      = var.deployment.cluster.domains.private
   fqdn        = "auth.${var.deployment.cluster.domains.private}"
@@ -39,7 +39,7 @@ module "authentik" {
 # Fronts authentik's authorization and token endpoints so the ownCloud mobile apps' fixed client
 # ids can reach the provider oCIS trusts, without relaxing oCIS's own token verification.
 module "oidc_client_alias" {
-  source = "../../modules/auth/authentik/oidc_client_alias"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/auth/authentik/oidc_client_alias?ref=v0.1.0"
 
   namespace = kubernetes_namespace_v1.auth.metadata[0].name
 

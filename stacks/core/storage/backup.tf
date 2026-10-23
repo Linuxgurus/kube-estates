@@ -1,6 +1,6 @@
 module "backup" {
   count  = var.backup_enabled ? 1 : 0
-  source = "../../../modules/storage/backup"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/storage/backup?ref=v0.1.0"
 
   bucket   = var.backup_bucket
   region   = var.backup_region
@@ -22,7 +22,7 @@ locals {
 # The namespace's own metadata (seaweedfs master/filer/admin): an accidental-wipe guard.
 module "seaweedfs_backup" {
   for_each = local.seaweedfs_targets
-  source   = "../../../modules/storage/backup/schedule"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/storage/backup/schedule?ref=v0.1.0"
 
   target    = "seaweedfs-${each.key}"
   namespace = var.namespace
