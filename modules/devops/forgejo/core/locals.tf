@@ -158,7 +158,7 @@ locals {
 
         service = {
           DISABLE_REGISTRATION        = true
-          REQUIRE_SIGNIN_VIEW         = true
+          REQUIRE_SIGNIN_VIEW         = false
           ENABLE_PASSWORD_SIGNIN_FORM = false
         }
 
