@@ -33,6 +33,6 @@ variable "helm_external_dns_version" {
 
 # Source of truth: gates the CRDs, so ngf-public and ngf-private must match it.
 variable "helm_ngf_version" {
-  default     = "2.7.1"
+  default     = "2.8.0"
   description = "nginx-gateway-fabric chart version; feeds the chart, the CRD kustomize refs and their triggers_replace."
 }
