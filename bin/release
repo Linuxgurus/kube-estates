@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# release — cut a module-library tag that consumers can pin.
+#
+#   bin/release v0.2.0
+#
+# Refuses unless: on `main`, clean tree, and `main` equals `origin/main`. A tag cut from an
+# uncommitted tree is a pin that resolves to something nobody reviewed, and a tag cut from a
+# stale `main` is a pin that silently excludes the merge someone just did.
+#
+# It tags, pushes the tag, and stops. Moving the consumers is `ref-bump` in the estate repo —
+# a separate act, because a release is not an apply and a tag is not a roll.
+set -euo pipefail
+cd "$(dirname "$0")/.." || exit 2
+
+tag="${1:-}"
+case "$tag" in
+  v[0-9]*) ;;
+  "") echo "usage: bin/release vX.Y.Z" >&2; exit 2 ;;
+  *) echo "release: tag must start with v (got '$tag') — v* is the protected pattern" >&2; exit 2 ;;
+esac
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+[ "$branch" = "main" ] || { echo "release: on '$branch', not main" >&2; exit 2; }
+[ -z "$(git status --porcelain)" ] || { echo "release: working tree is dirty" >&2; git status -s >&2; exit 2; }
+
+git fetch -q origin main
+local_sha=$(git rev-parse HEAD)
+origin_sha=$(git rev-parse origin/main)
+[ "$local_sha" = "$origin_sha" ] || {
+  echo "release: main ($(git rev-parse --short HEAD)) is not origin/main ($(git rev-parse --short origin/main))" >&2
+  exit 2
+}
+
+if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+  echo "release: $tag already exists — tags are not moved. Cut a new version instead." >&2
+  exit 2
+fi
+
+git tag -a "$tag" -m "modules $tag"
+git push -q origin "$tag"
+
+echo "released $tag -> $(git rev-parse --short HEAD)"
+echo
+echo "consumers still pin whatever they pinned. To move them (plan first, never apply):"
+echo "    ~/code/terraform/bin/ref-bump $tag"
