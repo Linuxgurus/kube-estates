@@ -39,7 +39,29 @@ fi
 git tag -a "$tag" -m "modules $tag"
 git push -q origin "$tag"
 
+# Consumers of a PUBLIC module source (e.g. soma, whose modules come from
+# github.com/Linuxgurus/kube-estates) resolve the tag over the mirror, not over the forge. The
+# mirror is fast — measured ~10 s for a new tag — but it is not instant, so give it room rather
+# than let a pin race it. The wait is a floor, not a guarantee: poll the public remote and only
+# report success when the tag is actually there.
+MIRROR="${MODULE_MIRROR:-https://github.com/Linuxgurus/kube-estates.git}"
+echo "waiting for $tag on the mirror ($MIRROR) ..."
+found=""
+for i in $(seq 1 12); do
+  sleep 5
+  if git ls-remote --tags "$MIRROR" "refs/tags/$tag" 2>/dev/null | grep -q .; then
+    found="$((i * 5))"
+    break
+  fi
+done
+
 echo "released $tag -> $(git rev-parse --short HEAD)"
+if [ -n "$found" ]; then
+  echo "mirror has it after ${found}s"
+else
+  echo "WARNING: $tag is not on the mirror after 60s. Consumers fetching from $MIRROR will fail" >&2
+  echo "         until it lands. The tag exists on the forge; do not delete and re-cut it." >&2
+fi
 echo
 echo "consumers still pin whatever they pinned. To move them (plan first, never apply):"
 echo "    ~/code/terraform/bin/ref-bump $tag"
