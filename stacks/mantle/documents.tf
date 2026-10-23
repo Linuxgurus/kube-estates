@@ -1,5 +1,5 @@
 module "documents" {
-  source = "../../modules/documents"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/documents?ref=v0.1.0"
 
   domain      = var.deployment.cluster.domains.private
   cert_issuer = var.deployment.cert_manager.external_issuer
@@ -18,7 +18,7 @@ module "documents" {
 }
 
 module "authentik_ldap" {
-  source = "../../modules/auth/authentik/ldap_outpost"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/auth/authentik/ldap_outpost?ref=v0.1.0"
 
   namespace      = var.deployment.auth.namespace
   core_namespace = var.deployment.auth.namespace

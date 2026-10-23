@@ -1,12 +1,12 @@
 module "harbor_setup" {
-  source        = "../../modules/devops/harbor/mantle"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/devops/harbor/mantle?ref=v0.1.0"
   projects      = var.deployment.harbor.projects
   domain        = var.deployment.cluster.domains.private
   oauth2_server = "auth.${var.deployment.cluster.domains.private}"
 }
 
 module "argo_setup" {
-  source        = "../../modules/devops/argo/mantle"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/devops/argo/mantle?ref=v0.1.0"
   namespace     = var.deployment.argo.namespace
   oauth2_server = "auth.${var.deployment.cluster.domains.private}"
   domain        = var.deployment.cluster.domains.private
@@ -26,7 +26,7 @@ module "argo_setup" {
 # The `forgejo` provider it uses is configured in providers.tf from the chart-minted
 # `forgejo-admin` Secret -- the instance belongs to `core` now, so this stack only reads it.
 module "forgejo_setup" {
-  source = "../../modules/devops/forgejo/mantle"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/devops/forgejo/mantle?ref=v0.1.0"
 
   registry_repos = var.forgejo_registry_repos
 }

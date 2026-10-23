@@ -5,19 +5,19 @@ resource "kubernetes_namespace_v1" "monitoring" {
 }
 
 module "metrics_server" {
-  source     = "../../modules/monitoring/metrics_server"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/monitoring/metrics_server?ref=v0.1.0"
   depends_on = [module.prometheus]
   namespace  = "monitoring"
 }
 
 module "smartctl" {
-  source     = "../../modules/monitoring/smartctl"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/monitoring/smartctl?ref=v0.1.0"
   depends_on = [module.prometheus]
   namespace  = "monitoring"
 }
 
 module "prometheus" {
-  source      = "../../modules/monitoring/prometheus"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/monitoring/prometheus?ref=v0.1.0"
   namespace   = "monitoring"
   domain      = var.deployment.cluster.domains.private
   cert_issuer = var.deployment.cert_manager.external_issuer

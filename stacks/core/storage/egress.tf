@@ -1,5 +1,5 @@
 module "egress_baseline" {
-  source    = "../../../modules/network/firewalls/policy"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/network/firewalls/policy?ref=v0.1.0"
   direction = "egress"
 
   namespace = var.namespace
@@ -8,7 +8,7 @@ module "egress_baseline" {
 
 # Cluster-wide VolumeSnapshot reconciliation, plus its leader-election lease.
 module "egress_snapshot_controller" {
-  source    = "../../../modules/network/firewalls/policy"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/network/firewalls/policy?ref=v0.1.0"
   direction = "egress"
 
   namespace     = var.namespace

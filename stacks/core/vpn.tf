@@ -1,5 +1,5 @@
 module "wireguard" {
-  source = "../../modules/network/wireguard"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/network/wireguard?ref=v0.1.0"
 
   namespace          = "kube-network-vpn"
   external_address   = var.deployment.network.vpn.external_address

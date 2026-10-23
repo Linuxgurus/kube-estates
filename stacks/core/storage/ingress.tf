@@ -1,5 +1,5 @@
 module "ingress_baseline" {
-  source    = "../../../modules/network/firewalls/policy"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/network/firewalls/policy?ref=v0.1.0"
   direction = "ingress"
 
   namespace = var.namespace

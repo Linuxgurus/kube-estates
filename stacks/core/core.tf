@@ -1,12 +1,12 @@
 module "network" {
-  source         = "../../modules/network"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/network?ref=v0.1.0"
   internal_dns   = var.deployment.network.internal_dns
   metal_networks = var.deployment.network.metal_networks
 }
 
 
 module "cert_man" {
-  source     = "../../modules/cert_manager"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/cert_manager?ref=v0.1.0"
   acme_email = var.deployment.cert_manager.acme_email
 
   dns01 = {

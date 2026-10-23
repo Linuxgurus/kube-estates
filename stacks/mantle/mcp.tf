@@ -1,5 +1,5 @@
 module "mcp" {
-  source = "../../modules/mcp"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/mcp?ref=v0.1.0"
 
   # The browser calls the connector for every MCP tool call, so the private gateway is enough
   # -- no WAN exposure for a pod that runs the MCP servers it is handed.

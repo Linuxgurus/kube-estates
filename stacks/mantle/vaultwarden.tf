@@ -1,5 +1,5 @@
 module "vaultwarden" {
-  source = "../../modules/vaultwarden"
+  source = "git::https://git.vn.linuxguru.net/Linuxguru/k8s-terraform.git//modules/vaultwarden?ref=v0.1.0"
 
   namespace   = "vaultwarden"
   domain      = var.deployment.cluster.domains.private
