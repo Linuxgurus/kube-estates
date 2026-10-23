@@ -20,7 +20,7 @@ resource "argocd_application" "deployer" {
       automated {
         prune       = true
         self_heal   = true
-        allow_empty = true
+        allow_empty = var.allow_empty
       }
     }
 
