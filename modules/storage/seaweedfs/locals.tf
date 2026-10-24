@@ -90,7 +90,7 @@ locals {
       domain_name = local.s3_host
       host        = local.s3_host
       # Lance Namespace REST on the s3 gateway; also starts the worker-lance sidecar.
-      lancePort = 9101
+      lancePort = var.lance_enabled ? 9101 : 0
       ingress = {
         enabled = false
       }

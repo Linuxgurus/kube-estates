@@ -37,6 +37,7 @@ module "expose_s3" {
 }
 
 module "expose_lance" {
+  count             = var.lance_enabled ? 1 : 0
   source            = "../../network/gateway/expose"
   name              = "seaweedfs-lance"
   namespace         = var.namespace
