@@ -30,6 +30,11 @@ resource "kubernetes_secret_v1" "admin_peer" {
 }
 
 locals {
+  # A bare tag is the obvious thing to pass and the chart takes a FULL image
+  # reference in imageOverride; left alone, a bare tag sends the kubelet to
+  # docker.io/library/<tag>. Accept either.
+  admin_image  = var.admin_image_override == "" ? null : (can(regex("/", var.admin_image_override)) ? var.admin_image_override : "${local.image_repo}:${var.admin_image_override}")
+  worker_image = var.worker_image_override == "" ? null : (can(regex("/", var.worker_image_override)) ? var.worker_image_override : "${local.image_repo}:${var.worker_image_override}")
   admin_peer_volumes = var.admin_peer_auth ? yamlencode([{
     name = "admin-peer"
     secret = {

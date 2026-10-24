@@ -1,5 +1,6 @@
 locals {
   fqdn        = "${var.name}.${var.domains[var.visibility]}"
+  image_repo  = "ghcr.io/jdblack/jblack-seaweedfs"
   master_host = "master.${local.fqdn}"
   s3_host     = "s3.${var.domains[var.visibility]}"
   lance_host  = "lance.${var.domains[var.visibility]}"
@@ -10,7 +11,7 @@ locals {
       replicationPlacement = "001"
       seaweedfs = {
         image = {
-          name = "ghcr.io/jdblack/jblack-seaweedfs"
+          name = local.image_repo
         }
       }
     }
@@ -21,7 +22,7 @@ locals {
     admin = {
       enabled           = true
       grpcPort          = "33646"
-      imageOverride     = var.admin_image_override == "" ? null : var.admin_image_override
+      imageOverride     = local.admin_image
       extraVolumes      = local.admin_peer_volumes
       extraVolumeMounts = local.admin_peer_mounts
       data = {
@@ -81,7 +82,7 @@ locals {
       replicas          = var.worker_replicas
       jobType           = "all"
       maxConcurrent     = 6
-      imageOverride     = var.worker_image_override == "" ? null : var.worker_image_override
+      imageOverride     = local.worker_image
       extraVolumes      = local.admin_peer_volumes
       extraVolumeMounts = local.admin_peer_mounts
       data = {
