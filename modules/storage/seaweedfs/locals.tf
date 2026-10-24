@@ -16,11 +16,14 @@ locals {
     }
 
     image = {
-      tag = "4.48-g937a8655f"
+      tag = var.image_tag
     }
     admin = {
-      enabled  = true
-      grpcPort = "33646"
+      enabled           = true
+      grpcPort          = "33646"
+      imageOverride     = var.admin_image_override == "" ? null : var.admin_image_override
+      extraVolumes      = local.admin_peer_volumes
+      extraVolumeMounts = local.admin_peer_mounts
       data = {
         type         = "persistentVolumeClaim"
         size         = "2Gi"
@@ -74,10 +77,13 @@ locals {
       }
     }
     worker = {
-      enabled       = true
-      replicas      = var.worker_replicas
-      jobType       = "all"
-      maxConcurrent = 6
+      enabled           = true
+      replicas          = var.worker_replicas
+      jobType           = "all"
+      maxConcurrent     = 6
+      imageOverride     = var.worker_image_override == "" ? null : var.worker_image_override
+      extraVolumes      = local.admin_peer_volumes
+      extraVolumeMounts = local.admin_peer_mounts
       data = {
         type           = "emptyDir"
         hostPathPrefix = "/seaweed-worker"
