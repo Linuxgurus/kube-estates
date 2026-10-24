@@ -1,6 +1,6 @@
 locals {
   fqdn        = "${var.name}.${var.domains[var.visibility]}"
-  image_repo  = "ghcr.io/jdblack/jblack-seaweedfs"
+  image_repo  = "ghcr.io/linuxgurus/seaweedfs"
   master_host = "master.${local.fqdn}"
   s3_host     = "s3.${var.domains[var.visibility]}"
   lance_host  = "lance.${var.domains[var.visibility]}"
