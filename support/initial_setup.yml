@@ -673,6 +673,13 @@
       register: kubelet_shutdown
       tags: kubelet
 
+    - name: Ensure the kubelet systemd drop-in directory exists
+      file:
+        path: /etc/systemd/system/kubelet.service.d
+        state: directory
+        mode: '0755'
+      tags: kubelet
+
     - name: Load the kubelet drop-in directory
       copy:
         dest: /etc/systemd/system/kubelet.service.d/20-kubelet-config-dir.conf
