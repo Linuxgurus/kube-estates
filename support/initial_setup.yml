@@ -640,6 +640,97 @@
                 - {{ control_plane_ip }}
                 - 127.0.0.1
                 - "::1"
+          ---
+          # kubeadm uploads this to the kube-system/kubelet-config ConfigMap, so a joining
+          # worker inherits the same values as the control plane. Pods get 90s to stop on a
+          # node reboot; the last 30s are reserved for critical pods.
+          apiVersion: kubelet.config.k8s.io/v1beta1
+          kind: KubeletConfiguration
+          shutdownGracePeriod: 90s
+          shutdownGracePeriodCriticalPods: 30s
+      tags: kubelet
+
+    # kubeadm only writes /var/lib/kubelet/config.yaml at init/join, so a node already in the
+    # cluster would keep the old values until it is joined again. A drop-in merged with
+    # --config-dir overrides the generated file and survives kubeadm upgrades. Tagged so a
+    # live node can be converged on its own: --tags kubelet.
+    - name: Ensure the kubelet drop-in directory exists
+      file:
+        path: /etc/kubernetes/kubelet.conf.d
+        state: directory
+        mode: '0755'
+      tags: kubelet
+
+    - name: Give the kubelet time to shut pods down on a node reboot
+      copy:
+        dest: /etc/kubernetes/kubelet.conf.d/90-shutdown.conf
+        mode: '0644'
+        content: |
+          apiVersion: kubelet.config.k8s.io/v1beta1
+          kind: KubeletConfiguration
+          shutdownGracePeriod: 90s
+          shutdownGracePeriodCriticalPods: 30s
+      register: kubelet_shutdown
+      tags: kubelet
+
+    - name: Ensure the kubelet systemd drop-in directory exists
+      file:
+        path: /etc/systemd/system/kubelet.service.d
+        state: directory
+        mode: '0755'
+      tags: kubelet
+
+    - name: Load the kubelet drop-in directory
+      copy:
+        dest: /etc/systemd/system/kubelet.service.d/20-kubelet-config-dir.conf
+        mode: '0644'
+        content: |
+          [Service]
+          Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml --config-dir=/etc/kubernetes/kubelet.conf.d"
+      register: kubelet_config_dir
+      tags: kubelet
+
+    # Ubuntu's unattended-upgrades caps logind's InhibitDelayMaxSec at 30s, which would
+    # silently clamp the 90s above; the Kubernetes docs say to shadow that file. Kubelet
+    # then writes its own logind drop-in with the grace period and SIGHUPs logind.
+    - name: Ensure the logind drop-in directory exists
+      file:
+        path: /etc/systemd/logind.conf.d
+        state: directory
+        mode: '0755'
+      tags: kubelet
+
+    - name: Let logind honour the kubelet shutdown grace period
+      file:
+        path: /etc/systemd/logind.conf.d/unattended-upgrades-logind-maxdelay.conf
+        src: /dev/null
+        state: link
+      register: logind_delay
+      tags: kubelet
+
+    - name: Apply the logind inhibitor delay change
+      systemd:
+        name: systemd-logind
+        state: reloaded
+      when: logind_delay is changed
+      tags: kubelet
+
+    - name: Check whether this node has joined the cluster
+      stat:
+        path: /var/lib/kubelet/config.yaml
+      register: kubelet_joined
+      tags: kubelet
+
+    # Before join the kubelet has no config; kubeadm starts it. Restarting then would race it.
+    - name: Apply the kubelet shutdown settings
+      systemd:
+        name: kubelet
+        daemon_reload: yes
+        state: restarted
+      when:
+        - kubelet_joined.stat.exists
+        - kubelet_shutdown is changed or kubelet_config_dir is changed
+      tags: kubelet
 
 
 # kubeadm token create --print-join-command
