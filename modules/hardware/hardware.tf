@@ -1,5 +1,5 @@
 # Node prerequisites (the HWE kernel that binds 8086:46d4, containerd's enable_cdi) are host
-# state and live in ../../support/initial_setup.yml.
+# state and live in the estate's support/initial_setup.yml (Linuxguru/estate).
 module "gpu_device_plugin" {
   source = "./gpu_device_plugin"
 
