@@ -1,0 +1,45 @@
+diff -ruN a/charts/ocis/templates/_common/store.tpl b/charts/ocis/templates/_common/store.tpl
+--- a/charts/ocis/templates/_common/store.tpl	2026-09-09 04:00:37
++++ b/charts/ocis/templates/_common/store.tpl	2026-10-31 15:25:21
+@@ -24,6 +24,6 @@
+ - name: OCIS_CACHE_STORE_NODES
+   value: {{ tpl (join "," .Values.cache.nodes) . | quote }}
+ - name: OCIS_CACHE_DISABLE_PERSISTENCE
+-  value: "true"
++  value: {{ .Values.cache.disablePersistence | quote }}
+ {{- end }}
+ {{- end -}}
+diff -ruN a/charts/ocis/values.schema.json b/charts/ocis/values.schema.json
+--- a/charts/ocis/values.schema.json	2026-09-09 04:00:37
++++ b/charts/ocis/values.schema.json	2026-10-31 15:25:21
+@@ -96,6 +96,13 @@
+           "required": [],
+           "title": "type",
+           "type": "string"
++        },
++        "disablePersistence": {
++          "default": true,
++          "description": "Store the cache streams on the NATS volume so they survive a NATS restart. Upstream hardcodes OCIS_CACHE_DISABLE_PERSISTENCE=true; this exposes it (JDBlack patch).",
++          "required": [],
++          "title": "disablePersistence",
++          "type": "boolean"
+         }
+       },
+       "required": [
+diff -ruN a/charts/ocis/values.yaml b/charts/ocis/values.yaml
+--- a/charts/ocis/values.yaml	2026-09-09 04:00:37
++++ b/charts/ocis/values.yaml	2026-10-31 15:25:21
+@@ -345,6 +345,13 @@
+   # -- Nodes of the cache to use.
+   nodes:
+     - "{{ .appNameNats }}:9233"
++  # @schema
++  # type: boolean
++  # required: false
++  # @schema
++  # -- Store the cache streams on the NATS volume so they survive a NATS restart.
++  # Upstream hardcodes OCIS_CACHE_DISABLE_PERSISTENCE=true; this exposes it (JDBlack patch).
++  disablePersistence: true
+ 
+ store:
+   # @schema

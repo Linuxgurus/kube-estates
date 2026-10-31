@@ -30,6 +30,13 @@ locals {
 
     replicas = 1
 
+    # The chart's cache store defaults to non-persistent, so a NATS pod replacement wipes
+    # every cache stream and services keep stale handles to them -- the login 500s of
+    # 2026-10-26. Our patched chart exposes this; keep the streams on the NATS volume.
+    cache = {
+      disablePersistence = false
+    }
+
     # The only services with state here are Deployments on ReadWriteOnce claims, so the
     # replacement has to come down before its successor comes up.
     deploymentStrategy = {
