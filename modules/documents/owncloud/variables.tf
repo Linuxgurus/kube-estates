@@ -12,8 +12,8 @@ variable "auth_namespace" { default = "kube-auth" }
 
 variable "helm_version" {
   type        = string
-  default     = "0.8.0"
-  description = "Chart version pulled from the OCI registry; publish_chart.sh tags what it pushes with this, so a bump means running it again."
+  default     = "0.8.0-jdblack.1"
+  description = "Chart version pulled from the OCI registry; publish_chart.sh tags what it pushes with this, so a bump means running it again. The -jdblack suffix marks our cache-persistence patch on upstream 0.8.0."
 }
 
 variable "chart_registry" {
