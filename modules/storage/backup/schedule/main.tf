@@ -11,9 +11,10 @@ resource "kubectl_manifest" "schedule" {
     spec = {
       schedule = var.cron
       template = {
-        ttl                = var.ttl
-        includedNamespaces = [var.namespace]
-        labelSelector      = { matchLabels = var.selector }
+        ttl                      = var.ttl
+        includedNamespaces       = [var.namespace]
+        labelSelector            = { matchLabels = var.selector }
+        defaultVolumesToFsBackup = var.default_volumes_to_fs_backup
       }
     }
   })
@@ -34,10 +35,11 @@ resource "kubectl_manifest" "weekly" {
     spec = {
       schedule = var.weekly_cron
       template = {
-        ttl                = var.weekly_ttl
-        storageLocation    = var.weekly_storage_location
-        includedNamespaces = [var.namespace]
-        labelSelector      = { matchLabels = var.selector }
+        ttl                      = var.weekly_ttl
+        storageLocation          = var.weekly_storage_location
+        includedNamespaces       = [var.namespace]
+        labelSelector            = { matchLabels = var.selector }
+        defaultVolumesToFsBackup = var.default_volumes_to_fs_backup
       }
     }
   })
