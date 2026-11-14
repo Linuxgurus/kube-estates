@@ -25,3 +25,11 @@ variable "ttl" { default = "168h" }
 variable "weekly_storage_location" { default = "" }
 variable "weekly_cron" { default = "0 4 * * 0" }
 variable "weekly_ttl" { default = "720h" }
+
+# Opt-in: false is absent-behaviour; a Schedule copies metadata, never PVC bytes (estate#12).
+
+variable "default_volumes_to_fs_backup" {
+  description = "Capture the namespace's PVC bytes without per-pod annotations. false preserves absent-behaviour; set true for a target whose pods carry no `backup.velero.io/backup-volumes` annotation."
+  type        = bool
+  default     = false
+}
