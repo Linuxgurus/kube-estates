@@ -26,18 +26,8 @@ variable "weekly_storage_location" { default = "" }
 variable "weekly_cron" { default = "0 4 * * 0" }
 variable "weekly_ttl" { default = "720h" }
 
-# ★ COVERAGE IS AN OPT-IN, AND THIS MODULE COULD NOT SAY WHICH. Velero captures a namespace's
-# metadata on every schedule; a PVC's BYTES arrive only when the pod carries the annotation
-# `backup.velero.io/backup-volumes`, or when the schedule sets `defaultVolumesToFsBackup: true`.
-# This module emitted neither, so a target whose pod carries no annotation silently produced
-# Completed backups containing zero volume bytes — measured 2026-11-10 on `twine-brain-data`:
-# `phase=Completed`, 0 PodVolumeBackups, and a 1.26 GB claim underneath it. A green phase proves
-# only that the metadata was copied.
-#
-# The default is `false` ON PURPOSE: it is the behaviour every existing schedule already has, so
-# wiring this field changes no target until a stack asks for it. Turning it on is a cost decision
-# (it multiplies the offsite footprint by the size of the volume), so it belongs at the call site,
-# not in a module default.
+# Opt-in: false is absent-behaviour; a Schedule copies metadata, never PVC bytes (estate#12).
+
 variable "default_volumes_to_fs_backup" {
   description = "Capture the namespace's PVC bytes without per-pod annotations. false preserves absent-behaviour; set true for a target whose pods carry no `backup.velero.io/backup-volumes` annotation."
   type        = bool
